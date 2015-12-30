@@ -1,0 +1,51 @@
+#!/usr/bin/ruby
+USAGE = <<EOS
+usage: papet [--help] <command> [<args>]
+  start start the clock
+  stop  stop the clock
+  show  display all saved intervals
+  clear delete all saved intervals
+  copy  copy all saved intervals into the clipboard
+EOS
+DB_DIR = ENV['HOME'] + '/.papet'
+
+def show_usage
+  puts USAGE
+end
+
+def setup_db
+end
+
+def punch_in
+end
+
+def punch_out
+end
+
+def show_intervals
+end
+
+def clear_intervals
+end
+
+def clipboard(opts)
+end
+
+args = ARGV.map(&:dup)
+
+if args.length == 0 || args[0] == '--help'
+  show_usage
+  Process.exit
+end
+
+setup_db
+
+command = args.shift
+case command
+when 'start'  then punch_in
+when 'stop'   then punch_out
+when 'show'   then show_intervals
+when 'clear'  then clear_intervals
+when 'copy'   then clipboard(args)
+else show_usage
+end
