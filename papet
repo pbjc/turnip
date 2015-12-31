@@ -15,7 +15,7 @@ Commands:
 EOS
 DB_DIR = '.papet'
 DB_FILE = 'intervals.db'
-DATE_FORMAT = '%Y:%m:%d'
+DATE_FORMAT = '%Y%m%d'
 TIME_FORMAT = '%I:%M %p'
 
 def show_usage
