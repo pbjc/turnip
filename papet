@@ -3,6 +3,10 @@ require 'sqlite3'
 
 USAGE = <<EOS
 usage: papet [--help] <command> [<args>]
+
+Record when you work during the day.
+
+Commands:
   start start the clock
   stop  stop the clock
   show  display all saved intervals
