@@ -38,7 +38,7 @@ def setup_db
   db
 end
 
-def punch_in
+def punch_in(db)
 end
 
 def punch_out(db)
@@ -65,7 +65,7 @@ db = setup_db
 
 command = args.shift
 case command
-when 'start'  then punch_in
+when 'start'  then punch_in(db)
 when 'stop'   then punch_out(db)
 when 'show'   then show_intervals(db)
 when 'clear'  then clear_intervals(db)
