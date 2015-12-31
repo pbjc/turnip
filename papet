@@ -62,31 +62,41 @@ def punch_in(db)
     end
   end
 
-  time = Time.now
-  db.execute <<-SQL, time.strftime(DATE_FORMAT), time.strftime(TIME_FORMAT)
+  now = Time.now
+  date = now.strftime(DATE_FORMAT)
+  time = now.strftime(TIME_FORMAT)
+  db.execute <<-SQL, date, time
     insert into intervals (date, start)
     values (?, ?);
   SQL
+
+  puts "Punched in at #{time}"
 end
 
 def punch_out(db)
+  start_time = ''
+
   db.execute(<<-SQL) do |last_interval|
     select start, end from intervals
     order by rowid desc
     limit 1;
   SQL
+    start_time = last_interval[0]
     unless last_interval[1].nil?
       puts "You already punched out at #{last_interval[1]}"
       return
     end
   end
 
-  db.execute <<-SQL, Time.now.strftime(TIME_FORMAT)
+  end_time = Time.now.strftime(TIME_FORMAT)
+  db.execute <<-SQL, end_time
     update intervals
     set end = ?
     order by rowid desc
     limit 1;
   SQL
+
+  puts "Worked from #{start_time} - #{end_time}"
 end
 
 def show_intervals(db)
