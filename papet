@@ -120,6 +120,7 @@ end
 
 def clear_intervals(db)
   db.execute 'delete from intervals;'
+  puts 'Cleared all intervals'
 end
 
 def clipboard(db, opts)
