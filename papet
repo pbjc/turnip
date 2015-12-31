@@ -15,6 +15,8 @@ Commands:
 EOS
 DB_DIR = '.papet'
 DB_FILE = 'intervals.db'
+DATE_FORMAT = '%Y:%m:%d'
+TIME_FORMAT = '%I:%M %p'
 
 def show_usage
   puts USAGE
@@ -27,21 +29,62 @@ def setup_db
   db_exists = File::exists?(DB_FILE)
   db = SQLite3::Database.new DB_FILE
 
-  db.execute <<-SQL unless db_exists
-    create table intervals (
-      date  date,
-      start time,
-      end   time
-    );
-  SQL
+  if db_exists
+    db.execute(<<-SQL) do |last_row|
+      select * from intervals
+      order by rowid desc
+      limit 1;
+    SQL
+      # TODO: handle a forgotten punch out
+    end
+  else
+    db.execute <<-SQL
+      create table intervals (
+        date  date,
+        start time,
+        end   time
+      );
+    SQL
+  end
 
   db
 end
 
 def punch_in(db)
+  db.execute(<<-SQL) do |last_interval|
+    select start, end from intervals
+    order by rowid desc
+    limit 1
+  SQL
+    if last_interval[1].nil?
+      puts "You already punched in at #{last_interval[0]}"
+    end
+  end
+
+  time = Time.now
+  db.execute <<-SQL, time.strftime(DATE_FORMAT), time.strftime(TIME_FORMAT)
+    insert into intervals (date, start)
+    values (?, ?);
+  SQL
 end
 
 def punch_out(db)
+  db.execute(<<-SQL) do |last_interval|
+    select start, end from intervals
+    order by rowid desc
+    limit 1
+  SQL
+    unless last_interval[1].nil?
+      puts "You already punched out at #{last_interval[1]}"
+    end
+  end
+
+  db.execute <<-SQL, Time.now.strftime(TIME_FORMAT)
+    update intervals
+    set end = ?
+    order by rowid desc
+    limit 1
+  SQL
 end
 
 def show_intervals(db)
