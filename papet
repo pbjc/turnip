@@ -90,6 +90,22 @@ def punch_out(db)
 end
 
 def show_intervals(db)
+  dates = db.execute <<-SQL
+    select distinct date from intervals
+    order by date asc;
+  SQL
+  dates.each do |date|
+    # TODO: format date
+    # TODO: show total hours worked
+    puts date
+    db.execute(<<-SQL, date) do |interval|
+      select start, end from intervals
+      where date = ?
+      order by start;
+    SQL
+      puts "#{interval[0]} - #{interval[1]}"
+    end
+  end
 end
 
 def clear_intervals(db)
