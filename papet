@@ -1,4 +1,6 @@
 #!/usr/bin/ruby
+require 'sqlite3'
+
 USAGE = <<EOS
 usage: papet [--help] <command> [<args>]
   start start the clock
@@ -7,28 +9,45 @@ usage: papet [--help] <command> [<args>]
   clear delete all saved intervals
   copy  copy all saved intervals into the clipboard
 EOS
-DB_DIR = ENV['HOME'] + '/.papet'
+DB_DIR = '.papet'
+DB_FILE = 'intervals.db'
 
 def show_usage
   puts USAGE
 end
 
 def setup_db
+  Dir.chdir(ENV['HOME'])
+  Dir.mkdir(DB_DIR) if !File::exists?(DB_DIR)
+  Dir.chdir(DB_DIR)
+  db_exists = File::exists?(DB_FILE)
+  db = SQLite3::Database.new DB_FILE
+
+  db.execute <<-SQL unless db_exists
+    create table intervals (
+      date  date,
+      start time,
+      end   time
+    );
+  SQL
+
+  db
 end
 
 def punch_in
 end
 
-def punch_out
+def punch_out(db)
 end
 
-def show_intervals
+def show_intervals(db)
 end
 
-def clear_intervals
+def clear_intervals(db)
+  db.execute 'delete from intervals'
 end
 
-def clipboard(opts)
+def clipboard(db, opts)
 end
 
 args = ARGV.map(&:dup)
@@ -38,14 +57,14 @@ if args.length == 0 || args[0] == '--help'
   Process.exit
 end
 
-setup_db
+db = setup_db
 
 command = args.shift
 case command
 when 'start'  then punch_in
-when 'stop'   then punch_out
-when 'show'   then show_intervals
-when 'clear'  then clear_intervals
-when 'copy'   then clipboard(args)
+when 'stop'   then punch_out(db)
+when 'show'   then show_intervals(db)
+when 'clear'  then clear_intervals(db)
+when 'copy'   then clipboard(db, args)
 else show_usage
 end
