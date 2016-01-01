@@ -12,7 +12,6 @@ Commands:
   stop    stop the clock
   show    display all saved intervals
   clear   delete all saved intervals
-  archive move the db to a desired location and start clean
 
 'papet <command> --help' to see how to use a command
 EOS
@@ -211,9 +210,6 @@ def clear_intervals(db)
   puts 'Cleared all intervals'
 end
 
-def archive(db)
-end
-
 # Main
 
 if ARGV.length == 0
@@ -229,6 +225,5 @@ when 'start'    then punch_in(db)
 when 'stop'     then punch_out(db)
 when 'show'     then show_intervals(db)
 when 'clear'    then clear_intervals(db)
-when 'archive'  then archive(db)
 else show_usage
 end
