@@ -15,7 +15,8 @@ Commands:
 EOS
 DB_DIR = '.papet'
 DB_FILE = 'intervals.db'
-DATE_FORMAT = '%Y%m%d'
+DATE_DB_FORMAT = '%Y%m%d'
+DATE_PRINT_FORMAT = '%b %d, %Y'
 TIME_FORMAT = '%I:%M %p'
 
 def show_usage
@@ -63,7 +64,7 @@ def punch_in(db)
   end
 
   now = Time.now
-  date = now.strftime(DATE_FORMAT)
+  date = now.strftime(DATE_DB_FORMAT)
   time = now.strftime(TIME_FORMAT)
   db.execute <<-SQL, date, time
     insert into intervals (date, start)
@@ -104,11 +105,12 @@ def show_intervals(db)
     select distinct date from intervals
     order by date asc;
   SQL
-  dates.each do |date|
-    # TODO: format date
+  dates.each do |db_date|
     # TODO: show total hours worked
-    puts date
-    db.execute(<<-SQL, date) do |interval|
+    date = Date.strptime(db_date[0].to_s, DATE_DB_FORMAT)
+    puts date.strftime(DATE_PRINT_FORMAT)
+
+    db.execute(<<-SQL, db_date) do |interval|
       select start, end from intervals
       where date = ?
       order by start;
