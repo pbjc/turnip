@@ -20,6 +20,16 @@ DATE_PRINT_FORMAT = '%b %d, %Y'
 TIME_DB_FORMAT = '%H:%M'
 TIME_PRINT_FORMAT = '%I:%M %p'
 
+def format_db_date(db_date_str)
+  return '' if db_date_str.nil?
+  Date.strptime(db_date_str, DATE_DB_FORMAT).strftime(DATE_PRINT_FORMAT)
+end
+
+def format_db_time(db_time_str)
+  return '' if db_time_str.nil?
+  Time.strptime(db_time_str, TIME_DB_FORMAT).strftime(TIME_PRINT_FORMAT)
+end
+
 def show_usage
   puts USAGE
 end
@@ -59,8 +69,7 @@ def punch_in(db)
     limit 1;
   SQL
     if last_interval[1].nil?
-      start_time = Time.strptime(last_interval[0].to_s, TIME_DB_FORMAT)
-      puts "You already punched in at #{start_time.strftime(TIME_PRINT_FORMAT)}"
+      puts "You already punched in at #{format_db_time(last_interval[0])}"
       return
     end
   end
@@ -82,10 +91,10 @@ def punch_out(db)
     order by rowid desc
     limit 1;
   SQL
-    start_time = Time.strptime(last_interval[0], TIME_DB_FORMAT)
-    unless last_interval[1].nil?
-      end_time = Time.strptime(last_interval[1].to_s, TIME_DB_FORMAT)
-      puts "You already punched out at #{end_time.strftime(TIME_PRINT_FORMAT)}"
+    last_interval = last_interval.map(&method(:format_db_time))
+    start_time = last_interval.first
+    unless last_interval[1].empty?
+      puts "You already punched out at #{last_interval[1]}"
       return
     end
   end
@@ -98,9 +107,7 @@ def punch_out(db)
     limit 1;
   SQL
 
-  puts 'Worked from ' \
-    "#{start_time.strftime(TIME_PRINT_FORMAT)} - " \
-    "#{end_time.strftime(TIME_PRINT_FORMAT)}"
+  puts "Worked from #{start_time} - #{end_time.strftime(TIME_PRINT_FORMAT)}"
 end
 
 def show_intervals(db)
@@ -110,18 +117,14 @@ def show_intervals(db)
   SQL
   dates.each do |db_date|
     # TODO: show total hours worked
-    date = Date.strptime(db_date[0].to_s, DATE_DB_FORMAT)
-    puts date.strftime(DATE_PRINT_FORMAT)
+    puts format_db_date(db_date.first.to_s)
 
     db.execute(<<-SQL, db_date) do |interval|
       select start, end from intervals
       where date = ?
       order by start;
     SQL
-      interval = interval.map do |time_str|
-        return '' if time_str.nil?
-        Time.strptime(time_str, TIME_DB_FORMAT).strftime(TIME_PRINT_FORMAT)
-      end
+      interval = interval.map(&method(:format_db_time))
       puts "#{interval[0]} - #{interval[1]}"
     end
   end
