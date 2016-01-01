@@ -13,6 +13,7 @@ Commands:
   clear delete all saved intervals
   copy  copy all saved intervals into the clipboard
 EOS
+
 DB_DIR = '.papet'
 DB_FILE = 'intervals.db'
 DATE_DB_FORMAT = '%Y%m%d'
@@ -47,6 +48,7 @@ def setup_db
       order by rowid desc
       limit 1;
     SQL
+
       # TODO: handle forgotten punch out
     end
   else
@@ -69,6 +71,7 @@ def punch_in(db)
     order by rowid desc
     limit 1;
   SQL
+
     if last_interval[1].nil?
       puts "You already punched in at #{format_db_time(last_interval[0])}"
       return
@@ -92,6 +95,7 @@ def punch_out(db)
     order by rowid desc
     limit 1;
   SQL
+
     last_interval = last_interval.map(&method(:format_db_time))
     start_time_str = last_interval.first
     unless last_interval[1].empty?
@@ -126,6 +130,7 @@ def show_intervals(db)
       where date = ?
       order by start;
     SQL
+
       interval = interval.map(&method(:format_db_time))
       puts "#{interval[0]} - #{interval[1]}"
     end
