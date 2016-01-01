@@ -17,7 +17,8 @@ DB_DIR = '.papet'
 DB_FILE = 'intervals.db'
 DATE_DB_FORMAT = '%Y%m%d'
 DATE_PRINT_FORMAT = '%b %d, %Y'
-TIME_FORMAT = '%I:%M %p'
+TIME_DB_FORMAT = '%H:%M'
+TIME_PRINT_FORMAT = '%I:%M %p'
 
 def show_usage
   puts USAGE
@@ -58,20 +59,19 @@ def punch_in(db)
     limit 1;
   SQL
     if last_interval[1].nil?
-      puts "You already punched in at #{last_interval[0]}"
+      start_time = Time.strptime(last_interval[0].to_s, TIME_DB_FORMAT)
+      puts "You already punched in at #{start_time.strftime(TIME_PRINT_FORMAT)}"
       return
     end
   end
 
   now = Time.now
-  date = now.strftime(DATE_DB_FORMAT)
-  time = now.strftime(TIME_FORMAT)
-  db.execute <<-SQL, date, time
+  db.execute <<-SQL, now.strftime(DATE_DB_FORMAT), now.strftime(TIME_DB_FORMAT)
     insert into intervals (date, start)
     values (?, ?);
   SQL
 
-  puts "Punched in at #{time}"
+  puts "Punched in at #{now.strftime(TIME_PRINT_FORMAT)}"
 end
 
 def punch_out(db)
@@ -82,22 +82,25 @@ def punch_out(db)
     order by rowid desc
     limit 1;
   SQL
-    start_time = last_interval[0]
+    start_time = Time.strptime(last_interval[0], TIME_DB_FORMAT)
     unless last_interval[1].nil?
-      puts "You already punched out at #{last_interval[1]}"
+      end_time = Time.strptime(last_interval[1].to_s, TIME_DB_FORMAT)
+      puts "You already punched out at #{end_time.strftime(TIME_PRINT_FORMAT)}"
       return
     end
   end
 
-  end_time = Time.now.strftime(TIME_FORMAT)
-  db.execute <<-SQL, end_time
+  end_time = Time.now
+  db.execute <<-SQL, end_time.strftime(TIME_DB_FORMAT)
     update intervals
     set end = ?
     order by rowid desc
     limit 1;
   SQL
 
-  puts "Worked from #{start_time} - #{end_time}"
+  puts 'Worked from ' \
+    "#{start_time.strftime(TIME_PRINT_FORMAT)} - " \
+    "#{end_time.strftime(TIME_PRINT_FORMAT)}"
 end
 
 def show_intervals(db)
