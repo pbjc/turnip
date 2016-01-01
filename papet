@@ -11,7 +11,6 @@ Commands:
   stop  stop the clock
   show  display all saved intervals
   clear delete all saved intervals
-  copy  copy all saved intervals into the clipboard
 EOS
 
 DB_DIR = '.papet'
@@ -160,10 +159,6 @@ def clear_intervals(db)
   puts 'Cleared all intervals'
 end
 
-# TODO: implement copy to clipboard
-def clipboard(db, args)
-end
-
 args = ARGV.map(&:dup)
 
 if args.length == 0 || args[0] == '--help'
@@ -179,6 +174,5 @@ when 'start'  then punch_in(db)
 when 'stop'   then punch_out(db)
 when 'show'   then show_intervals(db)
 when 'clear'  then clear_intervals(db)
-when 'copy'   then clipboard(db, args)
 else show_usage
 end
