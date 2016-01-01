@@ -2,7 +2,7 @@
 require 'optparse'
 require 'sqlite3'
 
-USAGE = <<EOS
+USAGE = <<EOS.freeze
 usage: papet [--help] <command> [<args>]
 
 Record when you work during the day.
@@ -17,12 +17,12 @@ Commands:
 'papet <command> --help' to see how to use a command
 EOS
 
-DB_DIR = '.papet'
-DB_FILE = 'intervals.db'
-DATE_DB_FORMAT = '%Y%m%d'
-DATE_PRINT_FORMAT = '%b %d, %Y'
-TIME_DB_FORMAT = '%H:%M'
-TIME_PRINT_FORMAT = '%I:%M %p'
+DB_DIR = '.papet'.freeze
+DB_FILE = 'intervals.db'.freeze
+DATE_DB_FORMAT = '%Y%m%d'.freeze
+DATE_PRINT_FORMAT = '%b %d, %Y'.freeze
+TIME_DB_FORMAT = '%H:%M'.freeze
+TIME_PRINT_FORMAT = '%I:%M %p'.freeze
 SECS_IN_HOUR = 60 * 60
 
 # Helpers
