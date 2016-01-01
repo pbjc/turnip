@@ -7,10 +7,13 @@ usage: papet [--help] <command> [<args>]
 Record when you work during the day.
 
 Commands:
-  start start the clock
-  stop  stop the clock
-  show  display all saved intervals
-  clear delete all saved intervals
+  start   start the clock
+  stop    stop the clock
+  show    display all saved intervals
+  clear   delete all saved intervals
+  archive move the db to a desired location and start clean
+
+'papet <command> --help' to see how to use a command
 EOS
 
 DB_DIR = '.papet'
@@ -20,6 +23,8 @@ DATE_PRINT_FORMAT = '%b %d, %Y'
 TIME_DB_FORMAT = '%H:%M'
 TIME_PRINT_FORMAT = '%I:%M %p'
 SECS_IN_HOUR = 60 * 60
+
+# Helpers
 
 def format_db_date(db_date_str)
   return '' if db_date_str.nil?
@@ -69,7 +74,9 @@ def setup_db
   db
 end
 
-def punch_in(db)
+# Commands
+
+def punch_in(db, args)
   db.execute(<<-SQL) do |last_interval|
     select start, end from intervals
     order by rowid desc
@@ -91,7 +98,7 @@ def punch_in(db)
   puts "Punched in at #{now.strftime(TIME_PRINT_FORMAT)}"
 end
 
-def punch_out(db)
+def punch_out(db, args)
   start_time = nil
 
   db.execute(<<-SQL) do |last_interval|
@@ -122,7 +129,7 @@ def punch_out(db)
   puts "(#{hours_worked.round(2)} hours)"
 end
 
-def show_intervals(db)
+def show_intervals(db, args)
   dates = db.execute <<-SQL
     select distinct date from intervals
     order by date;
@@ -154,10 +161,15 @@ def show_intervals(db)
   end
 end
 
-def clear_intervals(db)
+def clear_intervals(db, args)
   db.execute 'delete from intervals;'
   puts 'Cleared all intervals'
 end
+
+def archive(db, args)
+end
+
+# Main
 
 args = ARGV.map(&:dup)
 
@@ -170,9 +182,10 @@ db = setup_db
 
 command = args.shift
 case command
-when 'start'  then punch_in(db)
-when 'stop'   then punch_out(db)
-when 'show'   then show_intervals(db)
-when 'clear'  then clear_intervals(db)
+when 'start'    then punch_in(db, args)
+when 'stop'     then punch_out(db, args)
+when 'show'     then show_intervals(db, args)
+when 'clear'    then clear_intervals(db, args)
+when 'archive'  then archive(db, args)
 else show_usage
 end
