@@ -119,6 +119,7 @@ def show_intervals(db)
       order by start;
     SQL
       interval = interval.map do |time_str|
+        return '' if time_str.nil?
         Time.strptime(time_str, TIME_DB_FORMAT).strftime(TIME_PRINT_FORMAT)
       end
       puts "#{interval[0]} - #{interval[1]}"
