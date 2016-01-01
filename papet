@@ -20,6 +20,7 @@ DATE_DB_FORMAT = '%Y%m%d'
 DATE_PRINT_FORMAT = '%b %d, %Y'
 TIME_DB_FORMAT = '%H:%M'
 TIME_PRINT_FORMAT = '%I:%M %p'
+SECS_IN_HOUR = 60 * 60
 
 def format_db_date(db_date_str)
   return '' if db_date_str.nil?
@@ -29,6 +30,10 @@ end
 def format_db_time(db_time_str)
   return '' if db_time_str.nil?
   Time.strptime(db_time_str, TIME_DB_FORMAT).strftime(TIME_PRINT_FORMAT)
+end
+
+def get_hours_worked(start_time, end_time)
+  return (end_time - start_time) / SECS_IN_HOUR
 end
 
 def show_usage
@@ -88,7 +93,7 @@ def punch_in(db)
 end
 
 def punch_out(db)
-  start_time_str = ''
+  start_time = nil
 
   db.execute(<<-SQL) do |last_interval|
     select start, end from intervals
@@ -96,8 +101,8 @@ def punch_out(db)
     limit 1;
   SQL
 
+    start_time = Time.strptime(last_interval.first, TIME_DB_FORMAT)
     last_interval = last_interval.map(&method(:format_db_time))
-    start_time_str = last_interval.first
     unless last_interval[1].empty?
       puts "You already punched out at #{last_interval[1]}"
       return
@@ -112,7 +117,10 @@ def punch_out(db)
     limit 1;
   SQL
 
-  puts "Worked from #{start_time_str} - #{end_time.strftime(TIME_PRINT_FORMAT)}"
+  hours_worked = get_hours_worked(start_time, end_time)
+  print "Worked from #{start_time.strftime(TIME_PRINT_FORMAT)} - "
+  print "#{end_time.strftime(TIME_PRINT_FORMAT)} "
+  puts "(#{hours_worked.round(2)} hours)"
 end
 
 def show_intervals(db)
@@ -122,8 +130,8 @@ def show_intervals(db)
   SQL
 
   dates.each do |db_date|
-    # TODO: show total hours worked
-    puts format_db_date(db_date.first.to_s)
+    hours_worked = 0
+    interval_strs = []
 
     db.execute(<<-SQL, db_date) do |interval|
       select start, end from intervals
@@ -131,9 +139,19 @@ def show_intervals(db)
       order by start;
     SQL
 
-      interval = interval.map(&method(:format_db_time))
-      puts "#{interval[0]} - #{interval[1]}"
+      punched_in = interval[1].nil?
+      times = interval.map do |time_str|
+        time_str.nil? ? nil : Time.strptime(time_str, TIME_DB_FORMAT)
+      end
+      times[1] ||= Time.now
+      hours_worked += get_hours_worked(*times)
+      interval_strs.push "#{format_db_time(interval[0])} - "
+      interval_strs.last << (punched_in ? 'now' : format_db_time(interval[1]))
     end
+
+    print "#{format_db_date(db_date.first.to_s)} | "
+    puts "Worked for #{hours_worked.round(2)} hours"
+    interval_strs.each { |str| puts str }
   end
 end
 
