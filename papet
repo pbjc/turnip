@@ -1,4 +1,5 @@
 #!/usr/bin/ruby
+require 'optparse'
 require 'sqlite3'
 
 USAGE = <<EOS
@@ -44,6 +45,25 @@ def show_usage
   puts USAGE
 end
 
+def detect_unrecognized_args(parser)
+  unless ARGV.empty?
+    parser.abort "error: unrecognized args: #{ARGV.join(' ')}"
+  end
+end
+
+def no_args_command(command, description)
+  parser = OptionParser.new do |opts|
+    opts.banner = "usage: papet #{command} [--help]"
+    opts.separator description
+    opts.on_tail('-h', '--help', 'Show this message') do
+      puts opts
+      exit
+    end
+  end
+  parser.parse!
+  detect_unrecognized_args(parser)
+end
+
 def setup_db
   Dir.chdir(ENV['HOME'])
   Dir.mkdir(DB_DIR) unless File::exists?(DB_DIR)
@@ -61,7 +81,6 @@ def setup_db
       # TODO: handle forgotten punch out
     end
   else
-    # TODO: add index on date
     db.execute <<-SQL
       create table intervals (
         date  date,
@@ -76,7 +95,9 @@ end
 
 # Commands
 
-def punch_in(db, args)
+def punch_in(db)
+  no_args_command('start', 'Start the clock for your session')
+
   db.execute(<<-SQL) do |last_interval|
     select start, end from intervals
     order by rowid desc
@@ -90,7 +111,7 @@ def punch_in(db, args)
   end
 
   now = Time.now
-  db.execute <<-SQL, now.strftime(DATE_DB_FORMAT), now.strftime(TIME_DB_FORMAT)
+  db.execute(<<-SQL, now.strftime(DATE_DB_FORMAT), now.strftime(TIME_DB_FORMAT))
     insert into intervals (date, start)
     values (?, ?);
   SQL
@@ -98,7 +119,9 @@ def punch_in(db, args)
   puts "Punched in at #{now.strftime(TIME_PRINT_FORMAT)}"
 end
 
-def punch_out(db, args)
+def punch_out(db)
+  no_args_command('stop', 'Stop the clock for your session')
+
   start_time = nil
 
   db.execute(<<-SQL) do |last_interval|
@@ -116,7 +139,7 @@ def punch_out(db, args)
   end
 
   end_time = Time.now
-  db.execute <<-SQL, end_time.strftime(TIME_DB_FORMAT)
+  db.execute(<<-SQL, end_time.strftime(TIME_DB_FORMAT))
     update intervals
     set end = ?
     order by rowid desc
@@ -129,11 +152,32 @@ def punch_out(db, args)
   puts "(#{hours_worked.round(2)} hours)"
 end
 
-def show_intervals(db, args)
-  dates = db.execute <<-SQL
+def show_intervals(db)
+  limit = nil
+  parser = OptionParser.new do |opts|
+    opts.banner = 'usage: papet show [--help]'
+    opts.separator ''
+    opts.separator 'Show recorded intervals'
+
+    opts.on('-n [N]', Integer, 'Limit the results to the last N days') do |n|
+      opts.abort('error: limit must be positive integer ') if n.nil? || n <= 0
+      limit = n
+    end
+
+    opts.on_tail('-h', '--help', 'Show this message') do
+      puts opts
+      exit
+    end
+  end
+  parser.parse!
+  detect_unrecognized_args(parser)
+
+  query = <<-SQL
     select distinct date from intervals
-    order by date;
+    order by date
   SQL
+  query << (limit.nil? ? ';' : "limit ?;")
+  dates = db.execute(query, limit)
 
   dates.each do |db_date|
     hours_worked = 0
@@ -161,31 +205,30 @@ def show_intervals(db, args)
   end
 end
 
-def clear_intervals(db, args)
+def clear_intervals(db)
+  no_args_command('clear', 'Clear all recorded intervals')
   db.execute 'delete from intervals;'
   puts 'Cleared all intervals'
 end
 
-def archive(db, args)
+def archive(db)
 end
 
 # Main
 
-args = ARGV.map(&:dup)
-
-if args.length == 0 || args[0] == '--help'
+if ARGV.length == 0
   show_usage
-  Process.exit
+  exit
 end
 
 db = setup_db
 
-command = args.shift
+command = ARGV.shift
 case command
-when 'start'    then punch_in(db, args)
-when 'stop'     then punch_out(db, args)
-when 'show'     then show_intervals(db, args)
-when 'clear'    then clear_intervals(db, args)
-when 'archive'  then archive(db, args)
+when 'start'    then punch_in(db)
+when 'stop'     then punch_out(db)
+when 'show'     then show_intervals(db)
+when 'clear'    then clear_intervals(db)
+when 'archive'  then archive(db)
 else show_usage
 end
