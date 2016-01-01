@@ -77,8 +77,8 @@ def punch_in(db)
     limit 1;
   SQL
 
-    if last_interval[1].nil?
-      puts "You already punched in at #{format_db_time(last_interval[0])}"
+    if last_interval.last.nil?
+      puts "You already punched in at #{format_db_time(last_interval.first)}"
       return
     end
   end
@@ -103,8 +103,8 @@ def punch_out(db)
 
     start_time = Time.strptime(last_interval.first, TIME_DB_FORMAT)
     last_interval = last_interval.map(&method(:format_db_time))
-    unless last_interval[1].empty?
-      puts "You already punched out at #{last_interval[1]}"
+    unless last_interval.last.empty?
+      puts "You already punched out at #{last_interval.last}"
       return
     end
   end
@@ -139,14 +139,14 @@ def show_intervals(db)
       order by start;
     SQL
 
-      punched_in = interval[1].nil?
+      punched_in = interval.last.nil?
       times = interval.map do |time_str|
         time_str.nil? ? nil : Time.strptime(time_str, TIME_DB_FORMAT)
       end
-      times[1] ||= Time.now
+      times.last ||= Time.now
       hours_worked += get_hours_worked(*times)
-      interval_strs.push "#{format_db_time(interval[0])} - "
-      interval_strs.last << (punched_in ? 'now' : format_db_time(interval[1]))
+      interval_strs.push "#{format_db_time(interval.first)} - "
+      interval_strs.last << (punched_in ? 'now' : format_db_time(interval.last))
     end
 
     print "#{format_db_date(db_date.first.to_s)} | "
