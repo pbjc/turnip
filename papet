@@ -36,7 +36,7 @@ end
 
 def setup_db
   Dir.chdir(ENV['HOME'])
-  Dir.mkdir(DB_DIR) if !File::exists?(DB_DIR)
+  Dir.mkdir(DB_DIR) unless File::exists?(DB_DIR)
   Dir.chdir(DB_DIR)
   db_exists = File::exists?(DB_FILE)
   db = SQLite3::Database.new DB_FILE
@@ -47,9 +47,10 @@ def setup_db
       order by rowid desc
       limit 1;
     SQL
-      # TODO: handle a forgotten punch out
+      # TODO: handle forgotten punch out
     end
   else
+    # TODO: add index on date
     db.execute <<-SQL
       create table intervals (
         date  date,
@@ -84,7 +85,7 @@ def punch_in(db)
 end
 
 def punch_out(db)
-  start_time = ''
+  start_time_str = ''
 
   db.execute(<<-SQL) do |last_interval|
     select start, end from intervals
@@ -92,7 +93,7 @@ def punch_out(db)
     limit 1;
   SQL
     last_interval = last_interval.map(&method(:format_db_time))
-    start_time = last_interval.first
+    start_time_str = last_interval.first
     unless last_interval[1].empty?
       puts "You already punched out at #{last_interval[1]}"
       return
@@ -107,7 +108,7 @@ def punch_out(db)
     limit 1;
   SQL
 
-  puts "Worked from #{start_time} - #{end_time.strftime(TIME_PRINT_FORMAT)}"
+  puts "Worked from #{start_time_str} - #{end_time.strftime(TIME_PRINT_FORMAT)}"
 end
 
 def show_intervals(db)
@@ -115,6 +116,7 @@ def show_intervals(db)
     select distinct date from intervals
     order by date;
   SQL
+
   dates.each do |db_date|
     # TODO: show total hours worked
     puts format_db_date(db_date.first.to_s)
@@ -135,6 +137,7 @@ def clear_intervals(db)
   puts 'Cleared all intervals'
 end
 
+# TODO: implement copy to clipboard
 def clipboard(db, opts)
 end
 
