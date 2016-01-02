@@ -222,8 +222,8 @@ def show_intervals(db)
 
   unless line_buffer.empty?
     line_buffer.first << "Worked for #{hours_worked.round(2)} hours"
+    print_lines.push(*line_buffer)
   end
-  print_lines.push(*line_buffer)
   print_lines.each { |line| puts line }
 end
 
