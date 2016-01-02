@@ -200,7 +200,7 @@ def show_intervals(db)
 
       if current_date.nil?
         current_date = db_date
-        line_buffer << "#{format_db_date(db_date.to_s)} | "
+        line_buffer << "# #{format_db_date(db_date.to_s)} | "
       else
         line_buffer.first << "Worked for #{hours_worked.round(2)} hours"
         print_lines.push(*line_buffer)
