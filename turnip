@@ -3,7 +3,7 @@ require 'optparse'
 require 'sqlite3'
 
 USAGE = <<EOS.freeze
-usage: papet [--help] <command> [<args>]
+usage: turnip [--help] <command> [<args>]
 
 Record when you work during the day.
 
@@ -13,10 +13,10 @@ Commands:
   show    display all saved intervals
   clear   delete all saved intervals
 
-'papet <command> --help' to see how to use a command
+'turnip <command> --help' to see how to use a command
 EOS
 
-DB_DIR = '.papet'.freeze
+DB_DIR = '.turnip'.freeze
 DB_FILE = 'intervals.db'.freeze
 DATE_DB_FORMAT = '%Y%m%d'.freeze
 DATE_PRINT_FORMAT = '%b %d, %Y'.freeze
@@ -52,7 +52,7 @@ end
 
 def no_args_command(command, description)
   parser = OptionParser.new do |opts|
-    opts.banner = "usage: papet #{command} [--help]"
+    opts.banner = "usage: turnip #{command} [--help]"
     opts.separator description
     opts.on_tail('-h', '--help', 'Show this message') do
       puts opts
@@ -162,7 +162,7 @@ end
 def show_intervals(db)
   limit = nil
   parser = OptionParser.new do |opts|
-    opts.banner = 'usage: papet show [--help]'
+    opts.banner = 'usage: turnip show [--help]'
     opts.separator ''
     opts.separator 'Show recorded intervals'
 
