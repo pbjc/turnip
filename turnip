@@ -5,7 +5,7 @@ require 'sqlite3'
 USAGE = <<EOS.freeze
 usage: turnip [--help] <command> [<args>]
 
-Record when you work during the day.
+Log when you work during the day.
 
 Commands:
   start   start the clock
