@@ -154,9 +154,9 @@ def punch_out(db)
   SQL
 
   hours_worked = get_hours_worked(start_time, end_time)
-  print "Worked from #{start_time.strftime(TIME_PRINT_FORMAT)} - "
-  print "#{end_time.strftime(TIME_PRINT_FORMAT)} "
-  puts "(#{hours_worked.round(2)} hours)"
+  puts "Worked from #{start_time.strftime(TIME_PRINT_FORMAT)} - " \
+    "#{end_time.strftime(TIME_PRINT_FORMAT)} " \
+    "(#{hours_worked.round(2)} hours)"
 end
 
 def show_intervals(db)
