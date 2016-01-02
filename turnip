@@ -116,7 +116,7 @@ def punch_in(db)
   get_last_row(db) do |last_interval|
     last_interval.shift
     if last_interval.last.nil?
-      puts "You already punched in at #{format_db_time(last_interval.first)}"
+      puts "You already punched in at #{format_db_time(last_interval.first)}."
       return
     end
   end
@@ -127,7 +127,7 @@ def punch_in(db)
     values (?, ?);
   SQL
 
-  puts "Punched in at #{now.strftime(TIME_PRINT_FORMAT)}"
+  puts "Punched in at #{now.strftime(TIME_PRINT_FORMAT)}."
 end
 
 def punch_out(db)
@@ -136,11 +136,11 @@ def punch_out(db)
   start_time = nil
 
   get_last_row(db) do |last_interval|
-    last_interval.shift
+    db_date = last_interval.shift.to_s
     start_time = Time.strptime(last_interval.first, TIME_DB_FORMAT)
-    last_interval = last_interval.map(&method(:format_db_time))
-    unless last_interval.last.empty?
-      puts "You already punched out at #{last_interval.last}"
+    unless last_interval.last.nil?
+      puts "You're not punched in. You last punched out on " \
+        "#{format_db_date(db_date)}, #{format_db_time(last_interval.last)}."
       return
     end
   end
@@ -156,7 +156,7 @@ def punch_out(db)
   hours_worked = get_hours_worked(start_time, end_time)
   puts "Worked from #{start_time.strftime(TIME_PRINT_FORMAT)} - " \
     "#{end_time.strftime(TIME_PRINT_FORMAT)} " \
-    "(#{hours_worked.round(2)} hours)"
+    "(#{hours_worked.round(2)} hours)."
 end
 
 def show_intervals(db)
