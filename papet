@@ -92,17 +92,20 @@ def setup_db
   db
 end
 
+def get_last_row(db, &block)
+  db.execute(<<-SQL, &block)
+    select start, end from intervals
+    order by rowid desc
+    limit 1;
+  SQL
+end
+
 # Commands
 
 def punch_in(db)
   no_args_command('start', 'Start the clock for your session')
 
-  db.execute(<<-SQL) do |last_interval|
-    select start, end from intervals
-    order by rowid desc
-    limit 1;
-  SQL
-
+  get_last_row(db) do |last_interval|
     if last_interval.last.nil?
       puts "You already punched in at #{format_db_time(last_interval.first)}"
       return
@@ -123,12 +126,7 @@ def punch_out(db)
 
   start_time = nil
 
-  db.execute(<<-SQL) do |last_interval|
-    select start, end from intervals
-    order by rowid desc
-    limit 1;
-  SQL
-
+  get_last_row(db) do |last_interval|
     start_time = Time.strptime(last_interval.first, TIME_DB_FORMAT)
     last_interval = last_interval.map(&method(:format_db_time))
     unless last_interval.last.empty?
