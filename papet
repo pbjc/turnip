@@ -157,7 +157,9 @@ def show_intervals(db)
     opts.separator 'Show recorded intervals'
 
     opts.on('-n [N]', Integer, 'Limit the results to the last N days') do |n|
-      opts.abort('error: limit must be positive integer ') if n.nil? || n <= 0
+      if n.nil? || n <= 0
+        opts.abort('error: limit must be positive integer')
+      end
       limit = n
     end
 
@@ -169,37 +171,48 @@ def show_intervals(db)
   parser.parse!
   detect_unrecognized_args(parser)
 
-  query = <<-SQL
-    select distinct date from intervals
-    order by date
+  hours_worked = 0
+  print_lines = []
+  line_buffer = []
+  current_date = nil
+
+  db.execute(<<-SQL) do |interval|
+    select * from intervals
+    order by rowid desc;
   SQL
-  query << (limit.nil? ? ';' : "limit ?;")
-  dates = db.execute(query, limit)
 
-  dates.each do |db_date|
-    hours_worked = 0
-    print_lines = []
-    print_lines.push "#{format_db_date(db_date.first.to_s)} | "
-
-    db.execute(<<-SQL, db_date) do |interval|
-      select start, end from intervals
-      where date = ?
-      order by start;
-    SQL
-
-      punched_in = interval.last.nil?
-      parsed_interval = interval.map do |time_str|
-        time_str.nil? ? nil : Time.strptime(time_str, TIME_DB_FORMAT)
+    db_date = interval.shift
+    if db_date != current_date
+      unless limit.nil?
+        limit -= 1
+        break if limit < 0
       end
-      parsed_interval[1] ||= Time.now
-      hours_worked += get_hours_worked(*parsed_interval)
-      print_lines.push "#{format_db_time(interval.first)} - "
-      print_lines.last << (punched_in ? 'now' : format_db_time(interval.last))
+
+      if current_date.nil?
+        current_date = db_date
+        line_buffer << "#{format_db_date(db_date.to_s)} | "
+      else
+        line_buffer.first << "Worked for #{hours_worked.round(2)} hours"
+        print_lines.push(*line_buffer)
+        hours_worked = 0
+        line_buffer = []
+        current_date = db_date
+      end
     end
 
-    print_lines.first << "Worked for #{hours_worked.round(2)} hours"
-    print_lines.each { |str| puts str }
+    punched_in = interval.last.nil?
+    parsed_interval = interval.map do |time_str|
+      time_str.nil? ? nil : Time.strptime(time_str, TIME_DB_FORMAT)
+    end
+    parsed_interval[1] ||= Time.now
+    hours_worked += get_hours_worked(*parsed_interval)
+    line_buffer.insert(1, "#{format_db_time(interval.first)} - ")
+    line_buffer[1] << (punched_in ? 'now' : format_db_time(interval.last))
   end
+
+  line_buffer.first << "Worked for #{hours_worked.round(2)} hours"
+  print_lines.push(*line_buffer)
+  print_lines.each { |line| puts line }
 end
 
 def clear_intervals(db)
