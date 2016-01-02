@@ -63,6 +63,14 @@ def no_args_command(command, description)
   detect_unrecognized_args(parser)
 end
 
+def get_last_row(db, &block)
+  db.execute(<<-SQL, &block)
+    select * from intervals
+    order by rowid desc
+    limit 1;
+  SQL
+end
+
 def setup_db
   Dir.chdir(ENV['HOME'])
   Dir.mkdir(DB_DIR) unless File::exists?(DB_DIR)
@@ -71,13 +79,21 @@ def setup_db
   db = SQLite3::Database.new DB_FILE
 
   if db_exists
-    db.execute(<<-SQL) do |last_row|
-      select * from intervals
-      order by rowid desc
-      limit 1;
-    SQL
+    get_last_row(db) do |last_interval|
+      date = last_interval.shift
+      if last_interval.last.nil? &&
+          date.to_s != Time.now.strftime(DATE_DB_FORMAT)
 
-      # TODO: handle forgotten punch out
+        STDERR.puts 'warning: Punched in at ' \
+          "#{format_db_date(date)}, #{format_db_time(last_interval.first)}" \
+          ', but never punched out. Deleting incomplete interval.'
+
+        db.execute <<-SQL
+          delete from intervals
+          order by rowid desc
+          limit 1;
+        SQL
+      end
     end
   else
     db.execute <<-SQL
@@ -92,20 +108,13 @@ def setup_db
   db
 end
 
-def get_last_row(db, &block)
-  db.execute(<<-SQL, &block)
-    select start, end from intervals
-    order by rowid desc
-    limit 1;
-  SQL
-end
-
 # Commands
 
 def punch_in(db)
   no_args_command('start', 'Start the clock for your session')
 
   get_last_row(db) do |last_interval|
+    last_interval.shift
     if last_interval.last.nil?
       puts "You already punched in at #{format_db_time(last_interval.first)}"
       return
@@ -127,6 +136,7 @@ def punch_out(db)
   start_time = nil
 
   get_last_row(db) do |last_interval|
+    last_interval.shift
     start_time = Time.strptime(last_interval.first, TIME_DB_FORMAT)
     last_interval = last_interval.map(&method(:format_db_time))
     unless last_interval.last.empty?
