@@ -50,6 +50,7 @@ def detect_unrecognized_args(parser)
   end
 end
 
+# still show some usage text for commands without args
 def no_args_command(command, description)
   parser = OptionParser.new do |opts|
     opts.banner = "usage: turnip #{command} [--help]"
@@ -160,6 +161,8 @@ def punch_out(db)
 end
 
 def show_intervals(db)
+  # for now there's only one option
+  # optparse is overkill, but more might be added in the future
   limit = nil
   parser = OptionParser.new do |opts|
     opts.banner = 'usage: turnip show [--help]'
@@ -195,7 +198,11 @@ def show_intervals(db)
     if db_date != current_date
       unless limit.nil?
         limit -= 1
-        break if limit < 0
+        if limit < 0
+          line_buffer.first << "Worked for #{hours_worked.round(2)} hours"
+          print_lines.push(*line_buffer)
+          break
+        end
       end
 
       if current_date.nil?
@@ -216,14 +223,12 @@ def show_intervals(db)
     end
     parsed_interval[1] ||= Time.now
     hours_worked += get_hours_worked(*parsed_interval)
+
+    # reverse insertion order since the rows are in chronological order
     line_buffer.insert(1, "#{format_db_time(interval.first)} - ")
     line_buffer[1] << (punched_in ? 'now' : format_db_time(interval.last))
   end
 
-  unless line_buffer.empty?
-    line_buffer.first << "Worked for #{hours_worked.round(2)} hours"
-    print_lines.push(*line_buffer)
-  end
   print_lines.each { |line| puts line }
 end
 
